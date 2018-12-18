@@ -1,1 +1,1 @@
-Utilities from cs231n
+Algorithm implementations and utilities

@@ -1,2 +1,2 @@
 ## Reference
-Exercises from [CNNs for Visual Recognition](http://cs231n.github.io/)
+Exercises and code snippets from [Convolutional Neural Networks for Visual Recognition](http://cs231n.github.io/)
