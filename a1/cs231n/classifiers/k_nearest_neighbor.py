@@ -64,16 +64,15 @@ class KNearestNeighbor(object):
     num_test = X.shape[0]
     num_train = self.X_train.shape[0]
     dists = np.zeros((num_test, num_train))
-
-    #####################################################################
-    # Compute the l2 distance between the ith test point and the jth    #
-    # training point, and store the result in dists[i, j].              #
-    #####################################################################
+    
+    # Compute the l2 distance between the ith test point and the jth    
+    # training point, and store the result in dists[i, j].              
     for i in range(num_test):
       test_example = X[i]
       for j in range(num_train):
         train_example = self.X_train[j]
         dists[i, j] = np.linalg.norm(test_example - train_example) 
+
     return dists
 
   def compute_distances_one_loop(self, X):
@@ -87,12 +86,11 @@ class KNearestNeighbor(object):
     num_train = self.X_train.shape[0]
     dists = np.zeros((num_test, num_train))
     for i in range(num_test):
-      #######################################################################
-      # TODO:                                                               #
-      # Compute the l2 distance between the ith test point and all training #
-      # points, and store the result in dists[i, :].                        #
-      #######################################################################
-      pass
+                                                      
+      # Compute the l2 distance between the ith test point and all training 
+      # points, and store the result in dists[i, :].  
+      dists[i, :] = np.linalg.norm(X[i]-self.X_train, axis=1)
+
     return dists
 
   def compute_distances_no_loops(self, X):
@@ -105,13 +103,15 @@ class KNearestNeighbor(object):
     num_test = X.shape[0]
     num_train = self.X_train.shape[0]
     dists = np.zeros((num_test, num_train)) 
-    #########################################################################
-    # TODO:                                                                 #
-    # Compute the l2 distance between all test points and all training      #
-    # points without using any explicit loops, and store the result in      #
-    # dists.                                                                #
-    #########################################################################
-    pass
+                                                            
+    # Compute the l2 distance between all test points and all training     
+    # points without using any explicit loops, and store the result in      
+    # dists.
+    #  (a-b)**2 = a**2 - 2ab + b**2
+    a = np.sum(np.square(X), axis=1, keepdims=True)
+    b = np.sum(np.square(self.X_train), axis=1)
+    c = 2*np.dot(X, self.X_train.T)
+    dists = np.sqrt(a + b - c) 
     return dists
 
   def predict_labels(self, dists, k=1):
@@ -131,20 +131,16 @@ class KNearestNeighbor(object):
     y_pred = np.zeros(num_test)
     for i in range(num_test):
 
-      #########################################################################
-      # Use the distance matrix to find the k nearest neighbors of the ith    #
-      # testing point, and use self.y_train to find the labels of these       #
-      # neighbors. Store these labels in closest_y.                           #
-      #########################################################################
+      # Use the distance matrix to find the k nearest neighbors of the ith    
+      # testing point, and use self.y_train to find the labels of these       
+      # neighbors. Store these labels in closest_y.                           
       currentDistRow = dists[i]
       indices = np.argsort(currentDistRow)[:k]
       closest_y =  self.y_train[indices]
 
-      #########################################################################
-      # Find the most common label in the list closest_y of labels.           #
-      # Store this label in y_pred[i]. **Break ties by choosing the smaller   #
-      # label.                                                                #
-      #########################################################################
+      # Find the most common label in the list closest_y of labels.           
+      # Store this label in y_pred[i]. **Break ties by choosing the smaller   
+      # label.                                                                
       values, counts = np.unique(closest_y, return_counts=True)
       y_pred[i] = values[np.argmax(counts)]
 
