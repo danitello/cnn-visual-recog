@@ -107,7 +107,7 @@ class KNearestNeighbor(object):
     # Compute the l2 distance between all test points and all training     
     # points without using any explicit loops, and store the result in      
     # dists.
-    #  (a-b)**2 = a**2 - 2ab + b**2
+    # (a-b)**2 = a**2 - 2ab + b**2
     a = np.sum(np.square(X), axis=1, keepdims=True)
     b = np.sum(np.square(self.X_train), axis=1)
     c = 2*np.dot(X, self.X_train.T)
