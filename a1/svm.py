@@ -1,12 +1,15 @@
 from __future__ import print_function
 import random
 import time
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from cs231n.data_utils import load_CIFAR10
 from cs231n.classifiers.linear_svm import svm_loss_naive
 from cs231n.classifiers.linear_svm import svm_loss_vectorized
+from cs231n.classifiers.linear_classifier import LinearSVM
 from cs231n.gradient_check import grad_check_sparse
+
 
 # Load raw data
 cifar10_dir = '../datasets/cifar-10-batches-py'
@@ -84,5 +87,95 @@ loss, grad = svm_loss_naive(W, X_dev, y_dev, 0)
 
 ''' Evaluate vectorized implementation of loss '''
 loss_v, grad_v = svm_loss_vectorized(W, X_dev, y_dev, 0)
-print(np.linalg.norm(grad - grad_v))
-print(loss - loss_v)
+print("Gradient difference", np.linalg.norm(grad - grad_v))
+print("Loss difference", loss - loss_v)
+
+''' Implement Stochastic Gradient Descent to minimize loss '''
+svm = LinearSVM()
+tic = time.time()
+# Get list of loss history over training and visualize
+loss_hist = svm.train(X_train, y_train, learning_rate=1e-7, reg=2.5e4,
+                      num_iters=1500, verbose=True)
+toc = time.time()
+print("Time", (toc-tic))
+plt.plot(loss_hist)
+plt.xlabel('Iteration number')
+plt.ylabel('Loss value')
+plt.show()
+
+''' Generate predictions on test and validation sets'''
+y_train_pred = svm.predict(X_train)
+print("Training set accuracy", np.mean(y_train == y_train_pred))
+y_val_pred = svm.predict(X_val)
+print("Validation set accuracy", np.mean(y_val == y_val_pred))
+
+''' Use validation set to tune regularization strength and learning rate hyperparams '''
+print("\nTUNE ###############")
+# TODO: Mess with these values to get a better result
+# Also mind overflow in loss calculations
+learning_rates = [1e-7, 5e-8]
+regularization_strengths = [2.5e4, 5e2]
+# { (learning_rate, regularization_strength) : (training_accuracy, validation_accuracy) }
+results = {}
+best_acc_val = -1
+best_val_rated_svm = None 
+for i in range(len(learning_rates)):
+    for j in range(len(regularization_strengths)):
+        svm = LinearSVM()
+        svm.train(X_val, y_val, learning_rate=learning_rates[i],
+                reg=regularization_strengths[j], num_iters=1000, verbose=True)
+        y_v_pred = svm.predict(X_val)
+        y_tr_pred = svm.predict(X_train)
+        acc_val = np.mean(y_val == y_v_pred)
+        acc_tr = np.mean(y_train == y_tr_pred)
+        results[(learning_rates[i], regularization_strengths[j])] = (acc_tr, 
+                                                                    acc_val)
+        if acc_val > best_acc_val:
+            best_acc_val = acc_val
+            best_val_rated_svm = svm
+
+for lr, reg in sorted(results):
+    train_accuracy, val_accuracy = results[lr, reg]
+    print(f"lr {lr}, reg {reg} train accuracy: {train_accuracy} val accuracy: {val_accuracy}")
+print("Best validation accuracy achieved during cross-val", best_acc_val)
+
+''' Visualize cross-val results '''
+# Training acc
+x_scatter = [math.log10(x[0]) for x in results]
+y_scatter = [math.log10(x[1]) for x in results]
+marker_size = 100
+colors = [results[x][0] for x in results]
+plt.subplot(2,1,1)
+plt.scatter(x_scatter, y_scatter, marker_size, c=colors)
+plt.colorbar()
+plt.xlabel('log learning rate')
+plt.ylabel('log regularization strength')
+plt.title('CIFAR-10 training accuracy')
+
+marker_size = 100
+colors = [results[x][1] for x in results]
+plt.subplot(2,1,1)
+plt.scatter(x_scatter, y_scatter, marker_size, c=colors)
+plt.colorbar()
+plt.xlabel('log learning rate')
+plt.ylabel('log regularization strength')
+plt.title('CIFAR-10 training accuracy')
+
+''' Use best svm to predict on test set '''
+y_test_pred = best_val_rated_svm.predict(X_test)
+test_acc = np.mean(y_test == y_test_pred)
+print('Final test acc:', test_acc)
+
+''' Finally, visualize the learned weights for each class '''
+w = best_val_rated_svm.W[:-1, :] # remove bias
+w = w.reshape(32, 32, 3, 10)
+w_min, w_max = np.min(w), np.max(w)
+classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+for i in range(10):
+    plt.subplot(2,5,i+1)
+    # Rescale weights to be between 0 and 255
+    wimg = 255.0 * (w[:,:,:,i].squeeze() - w_min) / (w_max - w_min)
+    plt.imshow(wimg.astype('uint8'))
+    plt.axis('off')
+    plt.title(classes[i])
+plt.show()
