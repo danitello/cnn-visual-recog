@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from random import shuffle
 
@@ -23,11 +24,33 @@ def softmax_loss_naive(W, X, y, reg):
   loss = 0.0
   dW = np.zeros_like(W)
 
-  # TODO: Compute the softmax loss and its gradient using explicit loops.     
+  # Compute the softmax loss and its gradient using explicit loops.     
   # Store the loss in loss and the gradient in dW. If you are not careful     
   # here, it is easy to run into numeric instability. Don't forget the        
   # regularization!                                                           
-  pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  for i in range(num_train):
+    scores = X[i].dot(W)
+    scores -= np.max(scores) # Normalize
+    scores_exp = np.exp(scores)
+
+    probabilities = scores_exp / np.sum(scores_exp)
+    loss += -np.log(probabilities[y[i]]) # softmax
+    probabilities[y[i]] -= 1 # prep for grad calc
+
+    for j in range(num_classes):
+      dW[:,j] += X[i,:] * probabilities[j]
+
+
+  # Right now the loss is a sum over all training examples, but we want it
+  # to be an average instead so we divide by num_train
+  loss /= num_train
+  dW /= num_train
+
+  # Add regularization to the loss
+  loss += 0.5 * reg * np.sum(W * W)
+  dW += reg*W
 
   return loss, dW
 
@@ -42,11 +65,30 @@ def softmax_loss_vectorized(W, X, y, reg):
   loss = 0.0
   dW = np.zeros_like(W)
 
-  # TODO: Compute the softmax loss and its gradient using no explicit loops.  
+  # Compute the softmax loss and its gradient using no explicit loops.  
   # Store the loss in loss and the gradient in dW. If you are not careful     
   # here, it is easy to run into numeric instability. Don't forget the        
   # regularization!                                                           
-  pass
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  scores -= np.max(scores,axis=1,keepdims=True) # Normalize
+  scores_exp = np.exp(scores)
+  probabilities = scores_exp/np.sum(scores_exp, axis=1, keepdims=True)
+  logs = -np.log(probabilities[np.arange(num_train),y])
+  loss = np.sum(logs)
+
+  # Average loss
+  loss /= num_train
+
+  # Add regularization to the loss
+  loss += 0.5 * reg * np.sum(W * W)
+
+  #dW
+  probabilities[np.arange(num_train), y] -= 1
+  dW = X.T.dot(probabilities)
+  dW /= num_train
+  dW += reg*W
+
 
   return loss, dW
 

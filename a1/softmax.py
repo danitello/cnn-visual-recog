@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from time import time
 from cs231n.data_utils import load_CIFAR10
 from cs231n.classifiers.softmax import softmax_loss_naive
+from cs231n.classifiers.softmax import softmax_loss_vectorized
+from cs231n.gradient_check import grad_check_sparse
 
 def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000, num_dev=500):
     """
@@ -62,7 +64,24 @@ print('dev data shape: ', X_dev.shape)
 print('dev labels shape: ', y_dev.shape)
 print('\n')
 
-# Generate weight matrix and conduct softmax loss using naive version
+''' Generate weight matrix and conduct softmax loss computation using naive version '''
 W = np.random.randn(3073, 10) * 1e-4
 loss, grad = softmax_loss_naive(W, X_dev, y_dev, 0.0)
-print(f"loss: {loss} -log(0.1): {-np.log(0.1)}")
+# Since W is initialized to very small values, loss should come out to ~(-log(0.1))
+print(f"naive loss computation: {loss} -log(0.1): {-np.log(0.1)}") 
+# Check gradient calculation for accuracy
+f = lambda w: softmax_loss_naive(w, X_dev, y_dev, 0.0)[0]
+grad_check_sparse(f, W, grad, 10)
+# Another check, with regularization this time
+loss_naive, grad_naive = softmax_loss_naive(W, X_dev, y_dev, 0.000005)
+f = lambda w: softmax_loss_naive(w, X_dev, y_dev, 0.000005)[0]
+grad_check_sparse(f, W, grad, 10)
+
+''' Repeat for vectorized implementation and compare '''
+loss_vectorized, grad_vectorized = softmax_loss_vectorized(W, X_dev, y_dev, 0.000005)
+print(f'vectorized loss: {loss_vectorized} -log(0.1): {-np.log(0.1)}')
+
+# Use the Frobenius norm to compare the two versions of the gradient.
+grad_difference = np.linalg.norm(grad_naive - grad_vectorized, ord='fro')
+print('Loss difference: %f' % np.abs(loss_naive - loss_vectorized))
+print('Gradient difference: %f' % grad_difference)

@@ -42,7 +42,7 @@ def svm_loss_naive(W, X, y, reg):
   loss /= num_train
 
   # Add regularization to the loss.
-  loss += reg * np.sum(W * W)
+  loss += 0.5 * reg * np.sum(W * W)
 
   # Get the average for loss weight gradient by dividing by the 
   # number of training samples (X) that we used
@@ -79,7 +79,7 @@ def svm_loss_vectorized(W, X, y, reg):
   # Average the loss
   loss /= num_train
   # Include regularization loss
-  loss += reg * np.sum(W * W)
+  loss += 0.5 * reg * np.sum(W * W)
 
   # For each incorrect class in W with
   #   loss > 0, we need to add X[i, :] to it (this only needs to be done a max
