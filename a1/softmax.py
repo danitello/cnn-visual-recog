@@ -5,6 +5,7 @@ from time import time
 from cs231n.data_utils import load_CIFAR10
 from cs231n.classifiers.softmax import softmax_loss_naive
 from cs231n.classifiers.softmax import softmax_loss_vectorized
+from cs231n.classifiers.linear_classifier import Softmax
 from cs231n.gradient_check import grad_check_sparse
 
 def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000, num_dev=500):
@@ -83,5 +84,56 @@ print(f'vectorized loss: {loss_vectorized} -log(0.1): {-np.log(0.1)}')
 
 # Use the Frobenius norm to compare the two versions of the gradient.
 grad_difference = np.linalg.norm(grad_naive - grad_vectorized, ord='fro')
-print('Loss difference: %f' % np.abs(loss_naive - loss_vectorized))
-print('Gradient difference: %f' % grad_difference)
+print('Loss difference: ', np.abs(loss_naive - loss_vectorized))
+print('Gradient difference: ', grad_difference)
+
+''' Use the validation set to tune hyperparams -
+        regularization strength and learning rate '''
+results = {} # {(lr,reg) : (acc_tr, acc_val)}
+best_acc_val = -1
+best_softmax = None
+learning_rates = [1e-7, 5e-7]
+regularization_strengths = [2.5e4, 5e4]
+
+for i in range(len(learning_rates)):
+    for j in range(len(regularization_strengths)):
+        sm = Softmax()
+        sm.train(X_val, y_val, learning_rate=learning_rates[i],
+                reg=regularization_strengths[j], num_iters=1000, verbose=True)
+        y_v_pred = sm.predict(X_val)
+        y_tr_pred = sm.predict(X_train)
+        acc_val = np.mean(y_val == y_v_pred)
+        acc_tr = np.mean(y_train == y_tr_pred)
+        results[(learning_rates[i], regularization_strengths[j])] = (acc_tr, 
+                                                                    acc_val)
+        if acc_val > best_acc_val:
+            best_acc_val = acc_val
+            best_softmax = sm
+
+# Print out results.
+for lr, reg in sorted(results):
+    train_accuracy, val_accuracy = results[(lr, reg)]
+    print(f"lr {lr}, reg {reg} train accuracy: {train_accuracy} val accuracy: {val_accuracy}")
+print("Best validation accuracy achieved during cross-val", best_acc_val)
+
+# Evaluate the best softmax on test set
+y_test_pred = best_softmax.predict(X_test)
+test_acc = np.mean(y_test == y_test_pred)
+print('Final test acc:', test_acc)
+
+''' Visualize the learned weights for each class '''
+w = best_softmax.W[:-1,:] # remove bias (ones)
+w = w.reshape(32, 32, 3, 10)
+
+w_min, w_max = np.min(w), np.max(w)
+
+classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+for i in range(10):
+    plt.subplot(2, 5, i + 1)
+    
+    # Rescale the weights to be between 0 and 255
+    wimg = 255.0 * (w[:, :, :, i].squeeze() - w_min) / (w_max - w_min)
+    plt.imshow(wimg.astype('uint8'))
+    plt.axis('off')
+    plt.title(classes[i])
+plt.show()
