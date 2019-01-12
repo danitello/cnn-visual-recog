@@ -12,3 +12,8 @@ Algorithm class implemented in cs231n/classifiers/linear_svm.py and loss functio
 Implement fully vectorized Softmax loss function and optimize it with Stochastic Gradient Descent.
 
 Algorithm class implemented in cs231n/classifiers/softmax.py and loss function used from cs231n/classifiers/linear_classifier.py
+
+## Neural Network (two_layer_net.py)
+Develop a neural network with fully-connected layers to perform classification.
+
+Algorithm class implemented in cs231n/classifiers/neural_net.py
