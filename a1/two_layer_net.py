@@ -55,3 +55,13 @@ for param_name in grads:
   f = lambda W: net.loss(X, y, reg=0.05)[0]
   param_grad_num = eval_numerical_gradient(f, net.params[param_name],verbose=False)
   print(f'{param_name} max relative error: {rel_error(param_grad_num, grads[param_name])}')
+
+# Train a two layer network on toy data
+net = init_toy_model()
+stats = net.train(X, y, X, y, learning_rate=1e-1, reg=5e-6, num_iters=100, verbose=False)
+print('Final training loss: ', stats['loss_history'][-1])
+plt.plot(stats['loss_history'])
+plt.xlabel('iteration')
+plt.ylabel('training loss')
+plt.title('Training Loss history')
+plt.show()
